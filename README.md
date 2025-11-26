@@ -99,3 +99,46 @@ The pipeline generates a CSV file containing the following columns for each star
 | `Sum_Err` | Propagated error for the sum of EWs. |
 | `Computed_SNR` | SNR calculated by the pipeline using `der_snr` (if enabled). |
 ```
+
+### 🧩 How to Add a New Profile
+
+This pipeline is designed to be easily extended. To add a new analytical line profile (e.g., "MyVoigt"), follow these steps in `line_fitters.py`:
+
+1. Define the Profile Function: Write a function that calculates the line shape based on input parameters.
+
+```python
+def my_voigt_profile(x, center, amplitude, sigma, gamma):
+    # ... math here ...
+    return calculated_flux
+```
+
+2. Define the Residual Function: Write a function that returns data - model.
+
+```python
+def my_voigt_residuals(params, x, data):
+    p = params.valuesdict()
+    model = my_voigt_profile(x, p['center'], p['amplitude'], p['sigma'], p['gamma'])
+    return data - model
+```
+
+3. Define Parameter Creator: Write a function to initialize lmfit.Parameters with reasonable bounds.
+
+```python
+def create_params_my_voigt(center_guess, region, flux_slice):
+    params = Parameters()
+    params.add('center', value=center_guess, min=region[0], max=region[1])
+    params.add('amplitude', value=0.5, min=0)
+    # ... add other parameters ...
+    return params
+```
+4. Define EW Calculator: Write a function to calculate the EW and its error. You can use `idl_tabulate` for numerical integration.
+```python
+def calculate_ew_my_voigt(result_params, x, snr):
+    p = result_params.valuesdict()
+    # Integrate model
+    eqw = idl_tabulate(x, my_voigt_profile(x, p['center'], p['amplitude'], ...))
+    # Estimate error
+    center_err = result_params['center'].stderr
+    error = np.sqrt(3.55 * np.abs(center_err)) / snr
+    return eqw, error
+```

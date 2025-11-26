@@ -1,8 +1,3 @@
-Here is a `CONTRIBUTING.md` file tailored for your **Ca II Triplet EW Pipeline**, using the `galpy` guidelines as a structural reference but adapted to your specific modular architecture.
-
-You can add this file to the root of your repository.
-
------
 
 # Contributing to the Ca II Triplet EW Pipeline
 

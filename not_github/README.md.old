@@ -1,0 +1,188 @@
+# Ca II Triplet EW Pipeline
+
+This is a Python pipeline for automatically measuring the Equivalent Width (EW) of the Calcium II Triplet (CaT) lines (~850nm) from astronomical spectra.
+
+It performs radial velocity correction, robust continuum normalization, and line-fitting (using either Voigt or a Gaussian+Lorentzian sum profile) to derive EWs and their errors.
+
+## Features
+
+* **Master List Input:** Reads a single FITS or CSV table to find which stars to process.
+* **Flexible Data:** Loads spectra from standard FITS files (with header-based wavelength) or table-based files (FITS binary tables, CSVs, etc.) by specifying column names.
+* **RV Correction:** (Optional) Performs radial velocity (RV) correction via cross-correlation with a provided template.
+* **SNR Handling:** Uses pre-calculated SNR from the input table or computes it automatically (using `der_snr`) if missing.
+* **Robust Continuum:** Fits a global 2nd-degree polynomial continuum using pre-defined continuum bands before fitting the lines.
+* **Configurable Regions:** Allows using default (`cenarro2001`) or custom-defined wavelength regions for the continuum and line fits.
+* **Robust Line Fitting:** Fits each of the three CaT lines in separate, isolated regions on the normalized spectrum.
+* **Two Fit Models:** You can choose (`fitter_type`) between:
+    * `voigt`: A standard Voigt profile (a convolution).
+    * `cole`: Your custom model (a sum of a Gaussian and a Lorentzian).
+* **Diagnostic Plots:** Generates a multi-page PDF with a 4-panel diagnostic plot for every star, showing the global fit, individual line zooms, and fit regions.
+* **Clean Output:** Saves all results (EWs, errors, RVs, SNRs) to a single, clean CSV file.
+
+## Project Structure
+
+Your project directory should be set up as follows for the pipeline to run correctly:
+
+```
+/your_project_directory/
+├── spectra_data/
+│   ├── star1.fits
+│   ├── star2.fits
+│   └── ...
+├── rv_template/
+│   └── cat_template_rv.fits
+├── main_pipeline.py
+├── line_fitters.py
+├── rv_tools.py
+├── my_master_star_list.csv
+├── README.md
+├── requirements.txt
+│
+├── eqw_figures/        (Created by the script)
+│   └── results.pdf
+└── eqw_result/         (Created by the script)
+    └── results.csv
+```
+
+* `spectra_data/`: Contains all your individual spectrum files (e.g., `.fits`).
+* `rv_template/`: Contains your RV template file (e.g., `cat_template_rv.fits`).
+* `my_master_star_list.csv`: Your main input table.
+* `main_pipeline.py`: The script you run.
+* `line_fitters.py`: Module with the fitting logic.
+* `rv_tools.py`: Module with data loading and RV logic.
+
+## Installation
+
+1.  Clone this repository or download the files.
+2.  (Recommended) Create and activate a Python virtual environment:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Linux/macOS
+    # .\venv\Scripts\activate    # On Windows
+    ```
+3.  Install the required packages:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## Usage
+
+All configuration and execution is handled in `main_pipeline.py`.
+
+1.  **Open `main_pipeline.py`** in a text editor.
+
+2.  **Go to the `if __name__ == "__main__":` block** at the very bottom.
+
+3.  **Edit `WORK_DIR`:**
+    Set the `WORK_DIR` variable to the **absolute path** of your project directory.
+    ```python
+    # Example:
+    WORK_DIR = "/home/rcarrera/my_cat_project"
+    ```
+
+4.  **Edit the `config` dictionary:**
+    Customize the `config` dictionary to match your files and preferences. See the section below for a full explanation.
+
+5.  **Run the script:**
+    ```bash
+    python main_pipeline.py
+    ```
+
+The script will log its progress to the terminal and save the output PDF and CSV in the `eqw_figures/` and `eqw_result/` directories.
+
+## Configuration
+
+This is the main `config` dictionary in `main_pipeline.py`. All pipeline behavior is controlled from here.
+
+```python
+config = {
+    "workdir": WORK_DIR,
+    
+    # --- Input Table Config ---
+    # The name of your master list of stars (must be in WORK_DIR)
+    "input_table": "my_master_star_list.csv",
+    # The column name in your table that holds the unique Star ID
+    "col_id": "Star_ID",
+    # The column name that holds the spectrum filename
+    "col_filename": "FITS_File_Stem",
+    # The extension to add to the filename (e.g., ".fits")
+    # Set to None or "" if the filename in the table is already complete
+    "spectra_file_ext": ".fits",
+    
+    # --- SNR Config ---
+    # The column name for the pre-calculated SNR.
+    # Set to None if you do not have this column.
+    "col_snr": "SNR_8500",
+    # If True, will compute SNR using der_snr if col_snr is None
+    # or if the SNR value for a star is missing (NaN).
+    "compute_snr_if_missing": True,
+    
+    # --- RV Correction Config ---
+    # Set to True to skip RV correction and fit on the observed frame.
+    "skip_rv_correction": False,
+    
+    # --- Region Prescription ---
+    # Defines the wavelength bands for continuum and line fitting.
+    # Option 1: Use a preset name (e.g., "cenarro2001")
+    "region_prescription": "cenarro2001",
+    # Option 2: Define a custom prescription (uncomment to use)
+    # "region_prescription": {
+    #     'line_regions': {
+    #         'v1': [8490.0, 8510.0], 'v2': [8530.0, 8550.0], 'v3': [8650.0, 8670.0]
+    #     },
+    #     'cont_bands': {
+    #         'blue': [8470.0, 8480.0, 8560.0, 8570.0],
+    #         'red':  [8480.0, 8490.0, 8570.0, 8580.0]
+    #     }
+    # },
+
+    # --- Spectrum File Format ---
+    # 'format': 'fits_primary' -> Standard FITS (wavelength from header)
+    # 'format': 'csv'         -> CSV file (requires col_wave, col_flux)
+    # 'format': 'fits_bintable' -> FITS binary table (requires col_wave, col_flux)
+    "spectrum_config": {
+        "format": "fits_primary",  
+        "col_wave": "WAVELENGTH", # Column name for wavelength (if not 'fits_primary')
+        "col_flux": "FLUX",       # Column name for flux (if not 'fits_primary')
+        "col_var": "VARIANCE"     # (Optional) Column name for variance
+    },
+    
+    # --- Other File/Run Config ---
+    # Sub-directory (in WORK_DIR) where spectra are stored
+    "spectra_file": "spectra_data",
+    # Path to RV template (in WORK_DIR, without .fits)
+    "template_file": "rv_template/cat_template_rv",
+    # Base name for the output PDF and CSV files
+    "name_file": "my_ew_results",
+    # Which fitter to use: 'voigt' or 'cole'
+    "fitter_type": "cole"
+}
+```
+
+## Output
+
+This pipeline generates two main output files:
+
+1.  **Results CSV (`eqw_result/my_ew_results.csv`):**
+    A table containing one row per star with the following columns:
+    * `ID`: The Star ID from your input table.
+    * `RV_kms`: The calculated radial velocity (if not skipped).
+    * `Input_SNR`: The final SNR value used for the fit.
+    * `EW_8498`, `EW_8542`, `EW_8662`: The individual Equivalent Widths in Å.
+    * `Err_8498`, `Err_8542`, `Err_8662`: The corresponding errors in Å.
+    * `Sum_EW`, `Sum_Err`: The sum of the three EWs and its propagated error.
+    * `Computed_SNR`: The SNR calculated by `der_snr` (if it was computed).
+
+2.  **Diagnostic Plots (`eqw_figures/my_ew_results.pdf`):**
+    A multi-page PDF with one page per star. Each page has a 4-panel plot showing:
+    * **Top Panel:** The full spectrum slice, the global continuum fit, the line fit (rescaled), and the shaded bands used for continuum (gray) and line (red) fitting.
+    * **Bottom 3 Panels:** A zoom-in on each of the three CaT lines, showing the data, the global continuum, the individual line fit, and the final measured EW and error.
+
+## Authors
+
+* **rcarrera** (Original Author)
+* **Gemini** (Refactoring and Implementation)
+
+## License
+
+TBD

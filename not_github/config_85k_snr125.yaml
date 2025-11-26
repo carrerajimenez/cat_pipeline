@@ -1,0 +1,101 @@
+# -------------------------------------
+# CaT Pipeline Configuration File
+# -------------------------------------
+
+# --- Core Paths ---
+# workdir: The absolute path to your project.
+#          All other paths below are relative to this directory.
+#          Example: "/path/to/my/project"
+#          Using "." means the directory where you run the script.
+workdir: "/Users/rcarrera/work/Mahdieh/revision_catpaper/fixedcont_spectra/R_8500" 
+
+# spectra_file: Subdirectory *inside* workdir containing your spectra.
+spectra_file: "SNR_125"
+
+# template_file: Path to the RV template file (without .fits extension).
+template_file: "/Users/rcarrera/work/Mahdieh/revision_catpaper/code_to_publish/rv_template/cat_template_rv"
+
+# name_file: The base name for the output PDF and CSV files.
+name_file: "output_fixcont_85k_snr125"
+
+# --- Input Table Configuration ---
+input_table: "manifest_R8500_SNR125.csv"
+
+# Column name in your table for the unique Star ID.
+col_id: "ID"
+
+# Column name in your table for the spectrum filename.
+col_filename: "file"
+
+# Extension to append to filenames (e.g., ".fits").
+# If your table already has the full filename (e.g., "star1.fits"),
+# set this to null or an empty string "".
+spectra_file_ext: ".fits"
+
+# --- SNR Configuration ---
+# Column name for the pre-calculated SNR.
+# If you don't have this column, set it to null (or a name that doesn't exist).
+col_snr: "snr"
+
+# If 'true', the pipeline will run the der_snr algorithm
+# on any star that is missing an SNR value in the table.
+# If 'false', stars with missing SNR will be skipped.
+compute_snr_if_missing: true
+
+# --- RV Correction Configuration ---
+# If 'true', the cross-correlation step is skipped, and
+# the fit is performed on the observed-frame spectrum.
+skip_rv_correction: true
+
+# --- Pre-Normalization Configuration ---
+# This step (based on IDL continuum.pro) runs *before* RV correction
+# and is designed for unnormalized, raw spectra.
+pre_normalization:
+  # Set to 'true' to run this step, 'false' to skip it.
+  apply: true
+  
+  # 'order' controls the normalization method:
+  #   >= 0: N-th order polynomial (niter = # of iterations)
+  #   -1:   Global median of the whole spectrum (niter is ignored)
+  #   -0.5: Median filter (niter = filter width in pixels)
+  #   -1 < order < 0: Percentile filter (niter = width; percentile = -order * 100)
+  #   -2:   PEM (Piecewise) fit, 95th percentile (niter = # of pieces)
+  #   -3:   Running average / smooth (niter = width)
+  #   -150: PEM (Piecewise) fit, 50th percentile (niter = # of pieces)
+  order: -0.8
+  
+  # 'niter' is a multi-purpose parameter:
+  #   For order >= 0: Number of sigma-clipping iterations.
+  #   For order -0.5, -3: Width of the filter in pixels.
+  #   For order -2, -150: Number of pieces to split the spectrum into.
+  niter: 50
+  
+  # Sigma rejection thresholds (only used for order >= 0)
+  lowrej: 1.0
+  highrej: 3.0
+
+# --- Fitter Configuration ---
+# Selects the wavelength bands for the *final* continuum
+# fit and the line-fitting regions.
+# Options: "cenarro2001", "battaglia2008", "armandroffzinn1988"
+# You can also define your own custom dictionary here.
+region_prescription: "cenarro2001"
+
+# Selects the line profile to fit. Must match a key in
+# PROFILE_REGISTRY in line_fitters.py.
+# Default options: 'cole', 'gaussian', 'rutledge'
+fitter_type: "cole" 
+
+# --- Spectrum File Format Configuration ---
+# 'format': 
+#   'fits_primary': Standard FITS file (wavelength from WCS header)
+#   'csv': CSV file (requires col_wave, col_flux)
+#   'fits_bintable': FITS binary table (requires col_wave, col_flux)
+#   'ascii': Any astropy-readable text file (requires col_wave, col_flux)
+spectrum_config:
+  format: "fits_primary"
+  
+  # --- Column names (ONLY used if format is not 'fits_primary') ---
+  col_wave: "WAVELENGTH"
+  col_flux: "FLUX"
+  col_var: "VARIANCE" # (Optional) Column name for variance

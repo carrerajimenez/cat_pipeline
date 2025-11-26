@@ -2,7 +2,7 @@
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your_username/cat-pipeline.git](https://github.com/your_username/cat-pipeline.git)
+    git clone [https://github.com/carrerajimenez/cat-pipeline.git](https://github.com/your_username/cat-pipeline.git)
     cd cat-pipeline
     ```
 

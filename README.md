@@ -1,4 +1,42 @@
-### 🛠️ Installation
+# Ca II Triplet EW Pipeline
+
+**A flexible Python tool for measuring the Equivalent Width (EW) of the Calcium II Triplet (CaT) lines (~8500 Å) in stellar spectra.**
+
+This pipeline automates the reduction and analysis process, including radial velocity correction, robust continuum normalization, and line profile fitting, all controlled via a single YAML configuration file.
+
+## 🚀 Key Features
+
+* **Centralized Management:** Reads a single master list (CSV or FITS table) to manage batch analysis.
+* **Flexible Input Formats:** Supports spectra in standard FITS format (WCS header) or table-based formats (CSV, binary FITS tables, ASCII).
+* **YAML Configuration:** All pipeline parameters are controlled via a `config.yaml` file; no code modification is required.
+* **Robust Pre-Normalization:** Includes an optional module based on the iterative IDL algorithm `continuum.pro` to normalize "raw" spectra before analysis.
+* **RV Correction:** Performs cross-correlation with a template to automatically correct Radial Velocity (optional).
+* **SNR Handling:** Uses pre-calculated SNR from the input table or estimates it in-situ using the robust `der_snr` algorithm.
+* **Modular Fitting:**
+    * Fits each CaT line in isolated regions for maximum precision.
+    * Supports multiple profiles: `cole` (Gaussian+Lorentzian sum), `gaussian`, `rutledge`.
+    * Allows selection of minimization engine: `emcee` (Robust MCMC) or `leastsq` (Fast Levenberg-Marquardt).
+* **Detailed Output:** Generates multi-panel diagnostic plots (PDF) and a final results table (CSV).
+
+## 📂 Project Structure
+
+The pipeline expects the following directory structure to run:
+
+```text
+/your_project_directory/
+├── spectra/                 # Your spectrum files (.fits, .csv, etc.)
+├── rv_template/             # Template for RV correction
+│   └── cat_template_rv.fits
+├── cat_pipeline.py          # Main script
+├── line_fitters.py          # Fitting logic and profile definitions
+├── rv_tools.py              # Loading and RV tools
+├── pre_normalizer.py        # Pre-normalization module
+├── config.yaml              # Configuration file
+├── master_list.csv          # Table with the list of stars
+├── requirements.txt         # Python dependencies
+└── README.md
+
+## 🛠️ Installation
 
 1.  **Clone the repository:**
     ```bash
@@ -20,7 +58,7 @@
     pip install -r requirements.txt
     ```
 
-### ▶️ Usage
+## ▶️ Usage
 
 The pipeline is designed to be run from the command line, controlled entirely by the configuration file.
 
@@ -32,7 +70,7 @@ The pipeline is designed to be run from the command line, controlled entirely by
 python cat_pipeline.py -c config.yaml
 ```
 
-### ⚙️ Configuration (config.yaml)
+## ⚙️ Configuration (config.yaml)
 The config.yaml file controls every aspect of the pipeline. Below is a description of the available parameters:
 
 ```yaml
@@ -75,7 +113,7 @@ spectrum_config:
   col_flux: "FLUX"            # Column name for flux (if table format).
 ```
 
-### 📊 Output Description
+## 📊 Output Description
 The pipeline generates a CSV file containing the following columns for each star processed:
 
 | Column | Description |
@@ -100,7 +138,7 @@ The pipeline generates a CSV file containing the following columns for each star
 | `Computed_SNR` | SNR calculated by the pipeline using `der_snr` (if enabled). |
 ```
 
-### 🧩 How to Add a New Profile
+## 🧩 How to Add a New Profile
 
 This pipeline is designed to be easily extended. To add a new analytical line profile (e.g., "MyVoigt"), follow these steps in `line_fitters.py`:
 
@@ -112,7 +150,7 @@ def my_voigt_profile(x, center, amplitude, sigma, gamma):
     return calculated_flux
 ```
 
-2. Define the Residual Function: Write a function that returns data - model.
+2. Define the Residual Function: Write a function that returns `data - model`.
 
 ```python
 def my_voigt_residuals(params, x, data):
@@ -121,7 +159,7 @@ def my_voigt_residuals(params, x, data):
     return data - model
 ```
 
-3. Define Parameter Creator: Write a function to initialize lmfit.Parameters with reasonable bounds.
+3. Define Parameter Creator: Write a function to initialize `lmfit`. Parameters with reasonable bounds.
 
 ```python
 def create_params_my_voigt(center_guess, region, flux_slice):
@@ -142,3 +180,64 @@ def calculate_ew_my_voigt(result_params, x, snr):
     error = np.sqrt(3.55 * np.abs(center_err)) / snr
     return eqw, error
 ```
+## 📏 How to Add a New Region Prescription
+
+The pipeline comes with standard region definitions (e.g., `cenarro2001`), but you can easily add your own prescriptions from other papers or for specific science cases.
+
+You have two options:
+
+### Option 1: Ad-hoc (Directly in Config)
+For a quick test, you can define the dictionary directly in your `config.yaml` file without touching the code:
+
+```yaml
+# In config.yaml
+region_prescription:
+  line_regions:
+    v1: [8490.0, 8510.0]
+    v2: [8530.0, 8550.0]
+    v3: [8650.0, 8670.0]
+  cont_bands:
+    blue: [8470.0, 8560.0] # Flat list of edges is NOT supported here, use the Python method below for complex bands
+    red:  [8490.0, 8580.0]
+
+### Option 2: Permanent (Add to Code)
+
+To add a named prescription that you can reuse (like `mypaper2024`), edit `cat_pipeline.py`.
+
+1. Open `cat_pipeline.py`.
+
+2. Locate the `REGION_PRESCRIPTIONS` dictionary inside the `CaTPipeline` class.
+
+3. Add your new definition using the same structure:
+
+```Python
+REGION_PRESCRIPTIONS = {
+        'cenarro2001': { ... },
+        
+        # --- YOUR NEW PRESCRIPTION ---
+        'mypaper2024': {
+            'line_regions': {
+                'v1': [8490.0, 8510.0], # [Start, End] for 8498 line
+                'v2': [8530.0, 8550.0], # [Start, End] for 8542 line
+                'v3': [8650.0, 8670.0]  # [Start, End] for 8662 line
+            },
+            'cont_bands': {
+                # List of start points for continuum bands
+                'blue': [8470.0, 8560.0, 8600.0], 
+                # List of end points for continuum bands (must match 'blue' length)
+                'red':  [8480.0, 8570.0, 8610.0]
+            }
+        },
+    }
+
+```
+
+4. Use it: In `config.yaml`, set region_prescription: `"mypaper2024"`.
+
+## 📝 Credits
+Author: R. Carrera (INAF-OAS); 
+
+Contributions: M. Navabi (University of Surrey)
+
+## 📄 License
+This project is licensed under the MIT License. See the LICENSE file for details.

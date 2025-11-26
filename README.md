@@ -1,6 +1,6 @@
 # Ca II Triplet EW Pipeline
 
-**A flexible Python tool for measuring the Equivalent Width (EW) of the Calcium II Triplet (CaT) lines (~8500 Å) in stellar spectra.**
+**A flexible Python tool for measuring the Equivalent Width (EW) of the Calcium II Triplet (CaT) lines (~850 nm) in stellar spectra.**
 
 This pipeline automates the reduction and analysis process, including radial velocity correction, robust continuum normalization, and line profile fitting, all controlled via a single YAML configuration file.
 

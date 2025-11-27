@@ -7,19 +7,19 @@ The goal of this project is to provide a robust, flexible, and easy-to-use pipel
 
 ## Table of Contents
 
-1.  [Reporting Bugs](https://www.google.com/search?q=%23reporting-bugs)
-2.  [Suggesting Enhancements](https://www.google.com/search?q=%23suggesting-enhancements)
-3.  [Contributing Code](https://www.google.com/search?q=%23contributing-code)
-      * [General Workflow](https://www.google.com/search?q=%23general-workflow)
-      * [Adding a New Line Profile](https://www.google.com/search?q=%23adding-a-new-line-profile)
-      * [Adding a Pre-Normalization Method](https://www.google.com/search?q=%23adding-a-pre-normalization-method)
-4.  [Documentation](https://www.google.com/search?q=%23documentation)
+1.  [Reporting Bugs]([https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23reporting-bugs)
+2.  [Suggesting Enhancements]([https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23suggesting-enhancements)
+3.  [Contributing Code](https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23contributing-code)
+      * [General Workflow](https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23general-workflow)
+      * [Adding a New Line Profile](https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23adding-a-new-line-profile)
+      * [Adding a Pre-Normalization Method](https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23adding-a-pre-normalization-method)
+4.  [Documentation]([https://github.com/carrerajimenez/cat_pipeline/blob/main/CONTRIBUTING.md/search?q=%23documentation)
 
 -----
 
 ## Reporting Bugs
 
-If you find a bug in the code or an error in the results, please open an issue on GitHub. To help us solve it quickly, please include:
+If you are using the code and reading the documentation you are already contributing to its development. If you find a bug in the code or an error in the results, documentation, please open an issue here on GitHub and we will try to help you out. To help us solve it quickly, please include:
 
   * **A clear title and description.**
   * **Steps to reproduce:** Provide the specific configuration (values in your `config.yaml`) that caused the error.
